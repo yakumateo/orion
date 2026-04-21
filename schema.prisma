@@ -1,0 +1,133 @@
+// Orion — Database Schema
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Conversations & Messages ───────────────────────────────────────────────
+
+model Conversation {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  createdAt      DateTime     @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum MessageRole {
+  user
+  assistant
+}
+
+// ─── Long-term Memory ────────────────────────────────────────────────────────
+
+model Memory {
+  id        String     @id @default(cuid())
+  type      MemoryType
+  content   String     // The fact: "Usuario ahorra para viaje a Japón en dic 2025"
+  source    String?    // From which conversation this was extracted
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("memories")
+}
+
+enum MemoryType {
+  goal        // long-term objectives
+  preference  // how the user likes things
+  fact        // neutral facts about the user
+  pattern     // behavioral patterns detected
+}
+
+// ─── Finance Domain ──────────────────────────────────────────────────────────
+
+model FinanceEntry {
+  id          String          @id @default(cuid())
+  amount      Decimal         @db.Decimal(10, 2)
+  currency    String          @default("PEN")
+  type        FinanceType
+  category    String          // "alimentación", "transporte", etc.
+  description String
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@map("finance_entries")
+}
+
+enum FinanceType {
+  expense
+  income
+}
+
+// ─── Habits Domain ───────────────────────────────────────────────────────────
+
+model Habit {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  frequency   HabitFreq
+  targetDays  Int           @default(5) // target days per week
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  logs        HabitLog[]
+
+  @@map("habits")
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime @default(now())
+  completed Boolean  @default(true)
+  note      String?
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@map("habit_logs")
+}
+
+enum HabitFreq {
+  daily
+  weekly
+}
+
+// ─── Career Domain ───────────────────────────────────────────────────────────
+
+model CareerEvent {
+  id          String          @id @default(cuid())
+  type        CareerEventType
+  title       String
+  description String?
+  company     String?
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@map("career_events")
+}
+
+enum CareerEventType {
+  application    // job/internship application
+  interview      // interview scheduled or completed
+  achievement    // project completed, cert obtained, etc.
+  goal           // career goal set
+  learning       // course, book, skill learned
+}
