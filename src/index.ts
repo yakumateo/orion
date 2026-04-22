@@ -7,6 +7,7 @@ import { connectDB, disconnectDB } from './database/prisma.client';
 import { chatRouter } from './api/routes/chat.routes';
 import { memoryRouter } from './api/routes/memory.routes';
 import { errorHandler } from './api/middleware/error-handler';
+import { financeRouter } from './api/routes/finance.routes';
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get('/health', (_req, res) => {
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.use('/api/chat', chatRouter);
 app.use('/api/memory', memoryRouter);
+app.use('/api/finance', financeRouter);
 
 // ─── Error handler (must be last) ────────────────────────────────────────────
 app.use(errorHandler);
