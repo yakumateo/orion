@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import cors from 'cors'
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { connectDB, disconnectDB } from './database/prisma.client';
@@ -8,6 +9,11 @@ import { memoryRouter } from './api/routes/memory.routes';
 import { errorHandler } from './api/middleware/error-handler';
 
 const app = express();
+
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'DELETE'],
+}))
 
 // ─── Middleware ──────────────────────────────────────────────────────────────
 app.use(express.json());

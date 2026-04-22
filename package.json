@@ -27,12 +27,14 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@google/genai": "^1.50.1",
     "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
     "winston": "^3.14.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.0.0",
     "@types/node": "^22.0.0",
