@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getWeeklySummary, formatSummaryForAgent } from '../../domains/finance/finance.service';
+import { getWeeklySummary } from '../../domains/finance/finance.service';
 import { asyncHandler } from '../middleware/error-handler';
 
 export const financeRouter = Router();
