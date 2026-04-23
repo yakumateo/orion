@@ -147,26 +147,42 @@ export async function chat(sessionId: string, userMessage: string): Promise<stri
 
   logger.debug('Sending to AI', { provider: env.AI_PROVIDER, sessionId, messages: history.length });
 
-  let response = await callAI(systemPrompt, history);
+  try {
+    let response = await callAI(systemPrompt, history);
 
-  // Agentic loop — keep calling until no more tool calls
-  while (response.stopReason === 'tool_use' && response.toolCalls.length > 0) {
-    const toolCall = response.toolCalls[0];
-    const toolResult = await executeTool(toolCall.name, toolCall.input);
-    logger.info('Tool executed', { tool: toolCall.name, result: toolResult });
+    while (response.stopReason === 'tool_use' && response.toolCalls.length > 0) {
+      const toolCall = response.toolCalls[0];
+      const toolResult = await executeTool(toolCall.name, toolCall.input);
+      logger.info('Tool executed', { tool: toolCall.name, result: toolResult });
 
-    // Add tool result as a user message and call again
-    const historyWithTool: ChatMessage[] = [
-      ...history,
-      { role: 'assistant', content: response.text || `[usando herramienta: ${toolCall.name}]` },
-      { role: 'user', content: `Resultado de ${toolCall.name}: ${toolResult}` },
-    ];
+      const historyWithTool: ChatMessage[] = [
+        ...history,
+        { role: 'assistant', content: response.text || `[usando herramienta: ${toolCall.name}]` },
+        { role: 'user', content: `Resultado de ${toolCall.name}: ${toolResult}` },
+      ];
 
-    response = await callAI(systemPrompt, historyWithTool);
+      response = await callAI(systemPrompt, historyWithTool);
+    }
+
+    const assistantMessage = response.text || 'No pude procesar eso.';
+    addMessage(sessionId, { role: 'assistant', content: assistantMessage });
+    return assistantMessage;
+
+  } catch (error: unknown) {
+    // Gemini quota exhausted — devuelve 503 en lugar de 500
+    const isQuotaError =
+      error instanceof Error && error.message.includes('RESOURCE_EXHAUSTED');
+
+    if (isQuotaError) {
+      logger.warn('AI provider quota exhausted', { sessionId, provider: env.AI_PROVIDER });
+      const serviceError = Object.assign(
+        new Error('El agente está temporalmente ocupado. Intenta en 30 segundos.'),
+        { statusCode: 503 },
+      );
+      throw serviceError;
+    }
+
+    // Cualquier otro error — re-throw para que errorHandler lo capture
+    throw error;
   }
-
-  const assistantMessage = response.text || 'No pude procesar eso.';
-  addMessage(sessionId, { role: 'assistant', content: assistantMessage });
-
-  return assistantMessage;
 }
